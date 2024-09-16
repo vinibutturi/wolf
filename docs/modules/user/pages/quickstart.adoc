@@ -364,6 +364,127 @@ docker run \
 --
 ======
 
+--
+Proxmox LXC + Nvidia (manual)::
++
+--
+
+[WARNING,caption=WARNING]
+====
+At the moment it is only possible to run Wolf in inside a privileged LXC.
+====
+First you need to make sure your Nvidia drivers (version >= 530.30.02) are properly installed and loaded on your host.
+
+`nvidia-smi`
+```
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 550.107.02             Driver Version: 550.107.02     CUDA Version: 12.4     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 4060 Ti     On  |   00000000:01:00.0 Off |                  N/A |
+|  0%   39C    P8              9W /  165W |       2MiB /  16380MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|   No running processes found                                                            |
++-----------------------------------------------------------------------------------------+
+```
+
+`ls -l /dev/nividia*`
+```
+crw-rw-rw- 1 root root 195,   0 Aug 15 10:44 /dev/nvidia0
+crw-rw-rw- 1 root root 195, 255 Aug 15 10:44 /dev/nvidiactl
+crw-rw-rw- 1 root root 195, 254 Aug 15 10:44 /dev/nvidia-modeset
+crw-rw-rw- 1 root root 506,   0 Aug 15 10:44 /dev/nvidia-uvm
+crw-rw-rw- 1 root root 506,   1 Aug 15 10:44 /dev/nvidia-uvm-tools
+
+/dev/nvidia-caps:
+total 0
+cr-------- 1 root root 509, 1 Aug 15 10:44 nvidia-cap1
+cr--r--r-- 1 root root 509, 2 Aug 15 10:44 nvidia-cap2
+```
+
+.I am not able to see all the Nvidia devices
+[%collapsible]
+====
+You may need to setup your host to automatically load the NVIDIA GPU Kernel modules at boot time.
+
+First, create a new file `nvidia.conf` in the `/etc/modules-load.d/` directory and open it with a text editor.
+
+`nano /etc/modules-load.d/nvidia.conf`
+
+paste the following content to the file:
+```
+nvidia
+nvidia_uvm
+```
+
+For the changes to take effect, update the `initramfs` file with the following command:
+`update-initramfs -u`
+
+Add udev rules to add missing Nvidia devices in PVE 8
+`nano /etc/udev/rules.d/70-nvidia.rules`
+paste the following content to the file:
+
+```
+# create necessary NVIDIA device files in /dev/*
+KERNEL=="nvidia", RUN+="/bin/bash -c '/usr/bin/nvidia-smi -L && /bin/chmod 0666 /dev/nvidia*'"
+KERNEL=="nvidia_uvm", RUN+="/bin/bash -c '/usr/bin/nvidia-modprobe -c0 -u && /bin/chmod 0666 /dev/nvidia-uvm*'"
+```
+
+`reboot` you PVE host and try running `ls -l /dev/nividia*` again.
+====
+
+
+Add the udev rules to the host as explained in the xref:quickstart.adoc#_virtual_devices_support[Virtual devices support] section.
+
+One last final check on the host: we have to make sure that the `nvidia-drm` module has been loaded and that the module is loaded with the flag `modeset=1`.
+
+[source,bash]
+....
+cat /sys/module/nvidia_drm/parameters/modeset
+Y
+....
+
+.I get `N` or the file is not present, how do I set the flag?
+[%collapsible]
+====
+
+The easiest way to make the change persistent is to add `nvidia-drm.modeset=1` to the `GRUB_CMDLINE_LINUX_DEFAULT` line in `/etc/default/grub` ex:
+
+....
+GRUB_CMDLINE_LINUX_DEFAULT="quiet nvidia-drm.modeset=1"
+....
+
+Then `sudo update-grub` and `reboot`.
+====
+
+[source,bash]
+....
+docker run \
+    --name wolf \
+    --network=host \
+    -e XDG_RUNTIME_DIR=/tmp/sockets \
+    -v /tmp/sockets:/tmp/sockets:rw \
+    -e HOST_APPS_STATE_FOLDER=/etc/wolf \
+    -v /etc/wolf:/etc/wolf:rw \
+    -v /var/run/docker.sock:/var/run/docker.sock:rw \
+    --device /dev/dri/ \
+    ghcr.io/games-on-whales/wolf:stable
+....
+
+--
+======
+
+
 .Which ports are used by Wolf?
 [%collapsible]
 ====
