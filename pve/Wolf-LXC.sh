@@ -218,7 +218,8 @@ if pct create "$CT_ID" "local:vztmpl/$(basename "$LATEST_TMPL")" \
     --memory "$CT_RAM" --cores "$CT_CPU" \
     --net0 "$NET_CONF" $DNS_FLAG \
     --features nesting=1,keyctl=1 \
-    --unprivileged "$CT_UNPRIV" --start 1 >> "$LOG_FILE" 2>&1; then
+    --unprivileged "$CT_UNPRIV" \
+    --onboot 1 --start 1 >> "$LOG_FILE" 2>&1; then
     echo -e "     ${G}[OK] Container $CT_ID created and started.${RESET}"
 else
     cleanup_on_fail "Failed to create LXC container. Check $LOG_FILE for details."
