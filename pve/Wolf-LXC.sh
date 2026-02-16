@@ -115,8 +115,6 @@ if [ "$NET_TYPE" == "2" ]; then
     IP_PART="ip=$CT_IP/$CT_MASK,gw=$CT_GW"
     DNS_FLAG="--nameserver $CT_DNS"
     IP_SUMMARY="$CT_IP/$CT_MASK"
-    
-    # Preenche Gateway e DNS para o sumário
     GW_SUMMARY="GATEWAY:        $CT_GW"
     DNS_SUMMARY="DNS SERVER:     $CT_DNS"
 else
