@@ -17,7 +17,7 @@ BOLD='\e[1m'    # Bold
 RESET='\e[0m'   # Reset
 				 
 # Installer Title
-TITLE="Wolf - Proxmox LXC Docker Provisioner"
+TITLE="Wolf - Proxmox LXC Docker Helper"
 
 #Variables
 DEBIAN_VERSION=13
