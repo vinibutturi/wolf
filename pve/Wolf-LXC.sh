@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# Wolf - Proxmox LXC Docker
+# Wolf - Proxmox LXC Docker Helper
 # ==============================================================================
 
 #Exit on cancel
@@ -29,6 +29,8 @@ START_ONBOOT=1
 SEARCH_PATTERN="debian-$DEBIAN_VERSION-standard"
 LOG_FILE="/tmp/wolf_install.log"
 LANG_GEN="en_US.UTF-8"
+UDEV_FILE="/etc/udev/rules.d/85-wolf-virtual-inputs.rules"
+UDEV_URL="https://raw.githubusercontent.com/games-on-whales/wolf/refs/heads/stable/85-wolf.rules"
 
 # Interface Functions
 msg_box() { whiptail --title "$TITLE" --msgbox "$1" 10 60; }
@@ -145,6 +147,23 @@ else
 fi
 
 # ==============================================================================
+# UDEV RULES CHECK
+# ==============================================================================
+
+if [ -f "$UDEV_FILE" ]; then
+    UDEV_ACTION="existing"
+    UDEV_SUMMARY="Existing"
+else
+    if whiptail --title "$TITLE" --yesno "The udev rules file ($UDEV_FILE) is missing on the PVE host.\n\nThis is required for virtual input support. Would you like to add it during installation?" 12 65; then
+        UDEV_ACTION="add"
+        UDEV_SUMMARY="Add"
+    else
+        UDEV_ACTION="missing"
+        UDEV_SUMMARY="!!! MISSING !!!"
+    fi
+fi
+
+# ==============================================================================
 # FINAL CONFIRMATION
 # ==============================================================================
 
@@ -166,6 +185,8 @@ STORAGE:        $CT_STORAGE
 $(echo -e "$NETWORK_BLOCK")
 -----------------------------------------------------------
 SSH PASS AUTH:  $SSH_PASS
+-----------------------------------------------------------
+UDEV RULES:     $UDEV_SUMMARY
 -----------------------------------------------------------
 Do you want to start the creation now?"
 
@@ -195,6 +216,17 @@ clear
 echo -e "${G}=====================================================${RESET}"
 echo -e "${G}        STARTING CREATION: $CT_NAME ($CT_ID)      ${RESET}"
 echo -e "${G}=====================================================${RESET}\n"
+
+# UDEV Rules
+if [ "$UDEV_ACTION" == "add" ]; then
+    echo -e "${B}[0/5]${RESET} ${C}Setting up Host UDEV Rules...${RESET}"
+    if curl -fsSL "$UDEV_URL" -o "$UDEV_FILE"; then
+        udevadm control --reload-rules && udevadm trigger
+        echo -e "     ${G}[OK] udev rules installed on host.${RESET}"
+    else
+        echo -e "     ${R}[!] Failed to install udev rules on host.${RESET}"
+    fi
+fi
 
 # Template
 echo -e "${B}[1/5]${RESET} ${C}Fetching Debian $DEBIAN_VERSION Template...${RESET}"
