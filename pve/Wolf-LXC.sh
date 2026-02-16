@@ -304,6 +304,7 @@ else
 fi
 
 pct exec "$CT_ID" -- systemctl restart ssh >> "$LOG_FILE" 2>&1
+pct exec "$CT_ID" -- reboot >> "$LOG_FILE" 2>&1
 
 # ==============================================================================
 # FINAL SUMMARY
