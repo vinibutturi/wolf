@@ -360,25 +360,28 @@ fi
 # LXC SETUP
 # ==============================================================================
 
-# Fix locales
 echo -e "\n${B}[4/5]${RESET} ${C}Updating System & Installing Docker...${RESET}"
-echo -e "     ${Y}Fixing Locales...${RESET}"
 
-pct exec "$CT_ID" -- bash -c "sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen" >> "$LOG_FILE" 2>&1
-pct exec "$CT_ID" -- bash -c "locale-gen en_US.UTF-8" >> "$LOG_FILE" 2>&1
-pct exec "$CT_ID" -- bash -c "update-locale LANG=en_US.UTF-8" >> "$LOG_FILE" 2>&1
+# Create enviroment file
+echo -e "     ${Y}Setting up global environment (Locales & Frontend)...${RESET}"
+pct exec "$CT_ID" -- bash -c "cat <<EOF >> /etc/environment
+LANG=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+DEBIAN_FRONTEND=noninteractive
+EOF"
 
-# System Update & Full Upgrade
-echo -e "     ${Y}Updating and Upgrading system packages (please wait)...${RESET}"
-pct exec "$CT_ID" -- bash -c "export LANG=en_US.UTF-8; export LC_ALL=en_US.UTF-8; export DEBIAN_FRONTEND=noninteractive; apt-get update && apt-get -y dist-upgrade" >> "$LOG_FILE" 2>&1
+# Fix Locales 
+pct exec "$CT_ID" -- bash -c "sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen && locale-gen en_US.UTF-8 && update-locale LANG=en_US.UTF-8" >> "$LOG_FILE" 2>&1
 
-# Install Core Dependencies
-echo -e "     ${Y}Installing dependencies...${RESET}"
-pct exec "$CT_ID" -- bash -c "export DEBIAN_FRONTEND=noninteractive; apt-get install -y curl openssh-server" >> "$LOG_FILE" 2>&1
+# Update & Upgrade
+echo -e "     ${Y}Updating and Upgrading system packages...${RESET}"
+pct exec "$CT_ID" -- apt-get update >> "$LOG_FILE" 2>&1
+pct exec "$CT_ID" -- apt-get -y dist-upgrade >> "$LOG_FILE" 2>&1
 
-# Docker Install
-echo -e "     ${Y}Running Docker installation script...${RESET}"
-pct exec "$CT_ID" -- bash -c "export LANG=en_US.UTF-8; export LC_ALL=en_US.UTF-8; curl -fsSL https://get.docker.com | sh" >> "$LOG_FILE" 2>&1
+# Install Dependencies & Docker
+echo -e "     ${Y}Installing dependencies and Docker...${RESET}"
+pct exec "$CT_ID" -- apt-get install -y curl openssh-server >> "$LOG_FILE" 2>&1
+pct exec "$CT_ID" -- bash -c "curl -fsSL https://get.docker.com | sh" >> "$LOG_FILE" 2>&1
 
 # Validate docker service
 if pct exec "$CT_ID" -- docker --version >/dev/null 2>&1; then
