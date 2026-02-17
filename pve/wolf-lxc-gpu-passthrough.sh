@@ -314,7 +314,7 @@ if pct create "$CT_ID" "local:vztmpl/$(basename "$LATEST_TMPL")" \
     --net0 "$NET_CONF" $DNS_FLAG \
     --features nesting=1,keyctl=1 \
     --unprivileged "$CT_UNPRIV" \
-    --onboot "$START_ONBOOT" --start 1 >> "$LOG_FILE" 2>&1; then
+    --onboot "$START_ONBOOT" >> "$LOG_FILE" 2>&1; then
 	
 	LXC_CONFIG="/etc/pve/lxc/${CT_ID}.conf"
 	case "$GPU_ACTION" in
@@ -328,7 +328,13 @@ if pct create "$CT_ID" "local:vztmpl/$(basename "$LATEST_TMPL")" \
 			cat "$AMD_CONF" >> "$LXC_CONFIG"
 			echo -e "     ${G}[OK] Injected AMD passthrough...${RESET}";;
 	esac
-    echo -e "     ${G}[OK] Container $CT_ID created and started.${RESET}"
+	
+	echo -e "     ${Y}[+] Starting container with GPU configuration...${RESET}"
+    if pct start "$CT_ID" >> "$LOG_FILE" 2>&1; then
+        echo -e "     ${G}[OK] Container $CT_ID created and started successfully.${RESET}"
+    else
+        cleanup_on_fail "Failed to start container $CT_ID. Likely a GPU configuration or driver issue. Check $LOG_FILE."
+    fi
 else
     cleanup_on_fail "Failed to create LXC container. Check $LOG_FILE for details."
 fi
