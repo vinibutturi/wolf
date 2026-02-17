@@ -56,7 +56,7 @@ for s in "${STOR_LIST[@]}"; do
     fi
 done
 
-#Network brigde list
+#Network bridge list
 mapfile -t BR_LIST < <(pvesh get /nodes/localhost/network --type bridge --output-format yaml | grep "iface:" | awk '{print $2}')
 BR_OPTS=()
 for b in "${BR_LIST[@]}"; do BR_OPTS+=("$b" "Network Bridge"); done
