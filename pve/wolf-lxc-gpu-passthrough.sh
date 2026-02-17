@@ -84,7 +84,6 @@ while read -r line; do
     fi
 done < <(echo "$GPU_SCAN")
 
-# Validação dinâmica de arquivos (Fail Fast)
 MISSING_FILES=()
 declare -A GPU_MAP_FILES=( ["NVIDIA"]="$NVIDIA_CONF" ["INTEL"]="$INTEL_CONF" ["AMD"]="$AMD_CONF" )
 
@@ -101,7 +100,6 @@ if [ ${#MISSING_FILES[@]} -gt 0 ]; then
     exit 1
 fi
 
-# Monta o menu (Uma coluna)
 for vendor in "${!FOUND_VENDORS[@]}"; do
     GPU_OPTS+=("$vendor" "")
 done
